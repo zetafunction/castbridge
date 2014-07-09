@@ -15,9 +15,11 @@ func main() {
 
 	if *endpointFlag == "" {
 		log.Print("starting CastBridge in service mode")
-		forwarder.Listen()
+		go forwarder.Listen()
 	} else {
 		log.Print("starting CastBridge in client mode")
-		discovery.ListenForDIAL(*endpointFlag)
+		clientChannel := forwarder.NewClient(*endpointFlag)
+		go discovery.ListenForDIAL(clientChannel)
 	}
+	select {}
 }

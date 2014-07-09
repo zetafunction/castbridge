@@ -7,7 +7,7 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"net/rpc"
+	"time"
 )
 
 const dialServiceSearchType = "urn:dial-multiscreen-org:service:dial:1"
@@ -17,12 +17,7 @@ var ssdpMulticastAddr = &net.UDPAddr{
 	Port: 1900,
 }
 
-func ListenForDIAL(rpcServerAddr string) {
-	client, err := rpc.DialHTTP("tcp", rpcServerAddr+":8714")
-	if err != nil {
-		log.Fatalf("rpc.Dial failed: %v", err)
-	}
-
+func ListenForDIAL(clientChannel chan<- *forwarder.Request) {
 	conn, err := net.ListenMulticastUDP("udp", nil, ssdpMulticastAddr)
 	if err != nil {
 		log.Fatalf("net.ListenMulticastUDP failed: %v", err)
@@ -49,35 +44,39 @@ func ListenForDIAL(rpcServerAddr string) {
 			continue
 		}
 
-		log.Printf("Got a SSDP discovery request, forwarding...")
-		respBuf := make([]byte, 1024)
-		call := client.Go("Forwarder.Forward", &forwarder.Args{ssdpMulticastAddr, buf[:n]}, &respBuf, nil)
-		go handleRPCResponse(call, addr)
+		clientChannel <- &forwarder.Request{
+			&forwarder.Args{
+				ssdpMulticastAddr,
+				buf[:n],
+			},
+			newReplyHandler(addr),
+		}
 	}
 }
 
-func handleRPCResponse(call *rpc.Call, addr *net.UDPAddr) {
-	<-call.Done
-	if call.Error != nil {
-		log.Printf("RPC failed: %v", call.Error)
-		return
-	}
+func newReplyHandler(addr *net.UDPAddr) func([]byte) {
+	return func(reply []byte) {
+		conn, err := net.DialUDP("udp", nil, addr)
+		if err != nil {
+			log.Printf("net.DialUDP failed: %v", err)
+			return
+		}
+		defer conn.Close()
 
-	conn, err := net.DialUDP("udp", nil, addr)
-	if err != nil {
-		log.Printf("net.DialUDP failed: %v", err)
-		return
-	}
-	defer conn.Close()
+		// TODO: Arbitrary deadline. Should probably be configurable.
+		if err := conn.SetDeadline(time.Now().Add(10 * time.Second)); err != nil {
+			log.Printf("UDPConn.SetDeadline failed: %v", err)
+			return
+		}
+		n, err := conn.Write(reply)
+		if err != nil {
+			log.Printf("UDPConn.Write failed: %v", err)
+			return
+		}
+		if n != len(reply) {
+			log.Printf("UDPConn.Write failed: short write: %v", n)
+			return
 
-	reply := *call.Reply.(*[]byte)
-	n, err := conn.Write(reply)
-	if err != nil {
-		log.Printf("UDPConn.Write failed: %v", err)
-		return
-	}
-	if n != len(reply) {
-		log.Printf("UDPConn.Write failed: short write: %v", n)
-		return
+		}
 	}
 }
