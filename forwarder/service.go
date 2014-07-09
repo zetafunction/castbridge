@@ -16,7 +16,7 @@ type Args struct {
 func (t *Forwarder) Forward(args *Args, resp *[]byte) error {
 	log.Printf("Handling a forwarding request...")
 
-	conn, err := net.ListenPacket("udp", "127.0.0.1:0")
+	conn, err := net.ListenPacket("udp", "0.0.0.0:0")
 	if err != nil {
 		return err
 	}
