@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"github.com/zetafunction/castbridge/dial"
+	"github.com/zetafunction/castbridge/discovery"
 	"github.com/zetafunction/castbridge/forwarder"
 	"log"
 )
@@ -18,6 +18,6 @@ func main() {
 		forwarder.Listen()
 	} else {
 		log.Print("starting CastBridge in client mode")
-		dial.Listen("M-SEARCH", *endpointFlag)
+		discovery.ListenForDIAL(*endpointFlag)
 	}
 }

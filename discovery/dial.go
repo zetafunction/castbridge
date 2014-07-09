@@ -1,4 +1,4 @@
-package dial
+package discovery
 
 import (
 	"bufio"
@@ -10,20 +10,20 @@ import (
 	"net/rpc"
 )
 
-const DIALServiceSearchType = "urn:dial-multiscreen-org:service:dial:1"
+const dialServiceSearchType = "urn:dial-multiscreen-org:service:dial:1"
 
-var SSDPMulticastAddr = &net.UDPAddr{
+var ssdpMulticastAddr = &net.UDPAddr{
 	IP:   net.ParseIP("239.255.255.250"),
 	Port: 1900,
 }
 
-func Listen(method string, rpcServerAddr string) {
+func ListenForDIAL(rpcServerAddr string) {
 	client, err := rpc.DialHTTP("tcp", rpcServerAddr+":8714")
 	if err != nil {
 		log.Fatalf("rpc.Dial failed: %v", err)
 	}
 
-	conn, err := net.ListenMulticastUDP("udp", nil, SSDPMulticastAddr)
+	conn, err := net.ListenMulticastUDP("udp", nil, ssdpMulticastAddr)
 	if err != nil {
 		log.Fatalf("net.ListenMulticastUDP failed: %v", err)
 	}
@@ -41,17 +41,17 @@ func Listen(method string, rpcServerAddr string) {
 			continue
 		}
 
-		if req.Header.Get(http.CanonicalHeaderKey("ST")) != DIALServiceSearchType {
+		if req.Header.Get(http.CanonicalHeaderKey("ST")) != dialServiceSearchType {
 			continue
 		}
 
-		if req.Method != method {
+		if req.Method != "M-SEARCH" {
 			continue
 		}
 
 		log.Printf("Got a SSDP discovery request, forwarding...")
 		respBuf := make([]byte, 1024)
-		call := client.Go("Forwarder.Forward", &forwarder.Args{SSDPMulticastAddr, buf[:n]}, &respBuf, nil)
+		call := client.Go("Forwarder.Forward", &forwarder.Args{ssdpMulticastAddr, buf[:n]}, &respBuf, nil)
 		go handleRPCResponse(call, addr)
 	}
 }
