@@ -1,0 +1,18 @@
+castbridge is a simple tool to allow Chromecast discovery to work across
+different subnets. At the moment, simply proxying the SSDP discovery
+requests and responses seems to be sufficient, so that's all this tool
+does.
+
+The casting machine(s) must be able to directly communicate with the
+Chromecast device. For example, on a Tomato-based router, add these two
+new rules in Advanced > LAN Access:
+- One rule that permits machines to talk to the forwarding service on
+  the Chromecast subnet.
+- Another rule that allows machines to talk to the Chromecast itself.
+
+Usage:
+On the Chromecast subnet, start the forwarding service:
+$ castbridge
+
+On the other subnet, start the SSDP listening service:
+$ castbridge --endpoint <IP of forwarding service>
