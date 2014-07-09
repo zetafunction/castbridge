@@ -37,7 +37,6 @@ func (t *Forwarder) Forward(args *Args, resp *[]byte) error {
 		return err
 	}
 
-	log.Printf("Responding with %v...", buf[:n])
 	*resp = buf[:n]
 	return nil
 }
