@@ -9,8 +9,8 @@ import "net/rpc"
 type Forwarder struct{}
 
 type Args struct {
-	Req  []byte
 	Addr *net.UDPAddr
+	Req  []byte
 }
 
 func (t *Forwarder) Forward(args *Args, resp *[]byte) error {
