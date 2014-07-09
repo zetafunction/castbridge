@@ -70,7 +70,7 @@ func handleRPCResponse(call *rpc.Call, addr *net.UDPAddr) {
 	}
 	defer conn.Close()
 
-	reply := call.Reply.([]byte)
+	reply := *call.Reply.(*[]byte)
 	n, err := conn.Write(reply)
 	if err != nil {
 		log.Printf("UDPConn.Write failed: %v", err)
