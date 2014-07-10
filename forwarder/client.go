@@ -26,12 +26,12 @@ func handleRequests(endpointAddr string, channel <-chan *Request) {
 			}
 			defer client.Close()
 
-			var reply *[]byte
-			if err := client.Call("Forwarder.Forward", req, reply); err != nil {
+			var reply []byte
+			if err := client.Call("Forwarder.Forward", req.Args, &reply); err != nil {
 				log.Printf("Client.Call failed: %v", err)
 				return
 			}
-			req.OnReply(*reply)
+			req.OnReply(reply)
 		}()
 	}
 }
