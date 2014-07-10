@@ -27,7 +27,7 @@ func handleRequests(endpointAddr string, channel <-chan *Request) {
 			defer client.Close()
 
 			var reply *[]byte
-			if err := client.Call("Fowarder.Forward", req, reply); err != nil {
+			if err := client.Call("Forwarder.Forward", req, reply); err != nil {
 				log.Printf("Client.Call failed: %v", err)
 				return
 			}
