@@ -42,7 +42,9 @@ var expectedCastAnswerHeader dnsHeader = dnsHeader{
 	3,
 }
 
-// The FQDN in the data section is
+// The FQDN in the data section is encoded as a series of Pascal-style strings. Each string starts
+// with a byte length followed by that number of UTF-8 characters. A string with a byte length of
+// zero terminates the FQDN.
 func parseFQDNFromData(reader *bytes.Reader) (string, error) {
 	var fqdn string
 	var length byte
