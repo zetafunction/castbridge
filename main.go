@@ -20,6 +20,7 @@ func main() {
 		log.Print("starting CastBridge in client mode")
 		clientChannel := forwarder.NewClient(*endpointFlag)
 		go discovery.ListenForDIAL(clientChannel)
+		go discovery.ListenForMDNS(clientChannel)
 	}
 	select {}
 }
