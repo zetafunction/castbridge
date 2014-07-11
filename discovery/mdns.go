@@ -8,6 +8,13 @@ import (
 	"net"
 )
 
+type ForwardingMode int
+
+const (
+	MDNSQueryForwarding  = iota
+	MDNSAnswerForwarding = iota
+)
+
 var mDNSMulticastAddr = &net.UDPAddr{
 	IP:   net.ParseIP("224.0.0.251"),
 	Port: 5353,
@@ -64,7 +71,11 @@ func parseFQDNFromData(reader *bytes.Reader) (string, error) {
 	}
 }
 
-func ListenForMDNS(clientChannel chan<- *forwarder.Request) {
+func ListenForMDNS(mode ForwardingMode, clientChannel chan<- *forwarder.Request) {
+	if mode != MDNSQueryForwarding && mode != MDNSAnswerForwarding {
+		panic("unknown ForwardingMode specified")
+	}
+
 	conn, err := net.ListenMulticastUDP("udp", nil, mDNSMulticastAddr)
 	if err != nil {
 		log.Fatalf("net.ListenMulticastUDP failed: %v", err)
@@ -84,7 +95,9 @@ func ListenForMDNS(clientChannel chan<- *forwarder.Request) {
 			log.Printf("failed to unpack DNS header: %v", err)
 			continue
 		}
-		if header != expectedCastQueryHeader && header != expectedCastAnswerHeader {
+
+		if (mode == MDNSQueryForwarding && header != expectedCastQueryHeader) ||
+			(mode == MDNSAnswerForwarding && header != expectedCastAnswerHeader) {
 			continue
 		}
 

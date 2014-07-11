@@ -29,7 +29,6 @@ func (t *Forwarder) Forward(args *Args, resp *[]byte) error {
 	}
 
 	buf := make([]byte, 1024)
-	// FIXME: Unclear if the source IP needs to be forged when rebroadcast.
 	n, _, err = conn.ReadFrom(buf)
 	if err != nil {
 		return err
@@ -39,11 +38,13 @@ func (t *Forwarder) Forward(args *Args, resp *[]byte) error {
 	return nil
 }
 
-func Listen() {
+func Listen(port int) {
+	log.Printf("starting forwarding service on port %v", port)
+
 	forwarder := &Forwarder{}
 	rpc.Register(forwarder)
 	rpc.HandleHTTP()
-	listener, err := net.Listen("tcp", ":8714")
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%v", port))
 	if err != nil {
 		log.Fatal("net.Listen failed: ", err)
 	}
