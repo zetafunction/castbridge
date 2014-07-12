@@ -71,7 +71,7 @@ func parseFQDNFromData(reader *bytes.Reader) (string, error) {
 	}
 }
 
-func ListenForMDNS(mode ForwardingMode, clientChannel chan<- *forwarder.Request) {
+func ListenForMDNS(mode ForwardingMode, client *forwarder.Client) {
 	if mode != MDNSQueryForwarding && mode != MDNSAnswerForwarding {
 		panic("unknown ForwardingMode specified")
 	}
@@ -116,11 +116,6 @@ func ListenForMDNS(mode ForwardingMode, clientChannel chan<- *forwarder.Request)
 			log.Printf("got cast answer header")
 		}
 
-		// TODO: Implement forwarding strategy. Unfortunately, the simple forwarder isn't
-		// sufficient, since mDNS responses are multicast. This introduces two problems:
-		// - The forwarder currently assumes a request-response model, but if the reply is
-		//   multicasted, it has no easy way of associating a response with its request.
-		// - Simply rebroadcasting it on the subnet where the query originated is likely to
-		//   lead to a multicast loop on many systems.
+		client.Send(mDNSMulticastAddr, buf[:n])
 	}
 }

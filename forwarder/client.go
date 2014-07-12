@@ -2,22 +2,45 @@ package forwarder
 
 import (
 	"log"
+	"net"
 	"net/rpc"
 )
 
-type Request struct {
-	*Args
-	OnReply func([]byte)
+type Client struct {
+	queue chan<- func(*rpc.Client)
 }
 
-func NewClient(endpointAddr string) chan<- *Request {
-	channel := make(chan *Request, 100)
+func (c *Client) Send(addr *net.UDPAddr, buf []byte) {
+	c.queue <- func(client *rpc.Client) {
+		if err := client.Call("Forwarder.Send", &Args{addr, buf}, nil); err != nil {
+			log.Printf("Client.Call failed: %v", err)
+			return
+		}
+	}
+}
+
+func (c *Client) SendAndReply(addr *net.UDPAddr, buf []byte, onReply func([]byte)) {
+	c.queue <- func(client *rpc.Client) {
+		var reply []byte
+		if err := client.Call("Forwarder.SendAndReply", &Args{addr, buf}, &reply); err != nil {
+			log.Printf("Client.Call failed: %v", err)
+			return
+		}
+		onReply(reply)
+	}
+}
+
+func NewClient(endpointAddr string) *Client {
+	channel := make(chan func(*rpc.Client), 100)
+	client := &Client{
+		channel,
+	}
 	go handleRequests(endpointAddr, channel)
-	return channel
+	return client
 }
 
-func handleRequests(endpointAddr string, channel <-chan *Request) {
-	for req := range channel {
+func handleRequests(endpointAddr string, channel <-chan func(*rpc.Client)) {
+	for rpcCall := range channel {
 		go func() {
 			client, err := rpc.DialHTTP("tcp", endpointAddr+":8714")
 			if err != nil {
@@ -26,12 +49,7 @@ func handleRequests(endpointAddr string, channel <-chan *Request) {
 			}
 			defer client.Close()
 
-			var reply []byte
-			if err := client.Call("Forwarder.Forward", req.Args, &reply); err != nil {
-				log.Printf("Client.Call failed: %v", err)
-				return
-			}
-			req.OnReply(reply)
+			rpcCall(client)
 		}()
 	}
 }

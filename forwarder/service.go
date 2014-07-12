@@ -10,21 +10,38 @@ type Forwarder struct{}
 
 type Args struct {
 	Addr *net.UDPAddr
-	Req  []byte
+	Buf  []byte
 }
 
-func (t *Forwarder) Forward(args *Args, resp *[]byte) error {
+func (*Forwarder) Send(args *Args, _ *struct{}) error {
 	conn, err := net.ListenPacket("udp", "0.0.0.0:0")
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
 
-	n, err := conn.WriteTo(args.Req, args.Addr)
+	n, err := conn.WriteTo(args.Buf, args.Addr)
 	if err != nil {
 		return err
 	}
-	if n != len(args.Req) {
+	if n != len(args.Buf) {
+		return fmt.Errorf("PacketConn.WriteTo failed: short write: %v", n)
+	}
+	return nil
+}
+
+func (*Forwarder) SendAndReply(args *Args, reply *[]byte) error {
+	conn, err := net.ListenPacket("udp", "0.0.0.0:0")
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	n, err := conn.WriteTo(args.Buf, args.Addr)
+	if err != nil {
+		return err
+	}
+	if n != len(args.Buf) {
 		return fmt.Errorf("PacketConn.WriteTo failed: short write: %v", n)
 	}
 
@@ -34,7 +51,7 @@ func (t *Forwarder) Forward(args *Args, resp *[]byte) error {
 		return err
 	}
 
-	*resp = buf[:n]
+	*reply = buf[:n]
 	return nil
 }
 

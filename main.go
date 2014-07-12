@@ -16,14 +16,14 @@ func main() {
 
 	if *serviceFlag {
 		log.Print("starting CastBridge in service mode")
-		clientChannel := forwarder.NewClient(*endpointFlag)
-		go discovery.ListenForMDNS(discovery.MDNSAnswerForwarding, clientChannel)
+		client := forwarder.NewClient(*endpointFlag)
+		go discovery.ListenForMDNS(discovery.MDNSAnswerForwarding, client)
 		go forwarder.Listen(*portFlag)
 	} else {
 		log.Print("starting CastBridge in client mode")
-		clientChannel := forwarder.NewClient(*endpointFlag)
-		go discovery.ListenForDIAL(clientChannel)
-		go discovery.ListenForMDNS(discovery.MDNSQueryForwarding, clientChannel)
+		client := forwarder.NewClient(*endpointFlag)
+		go discovery.ListenForDIAL(client)
+		go discovery.ListenForMDNS(discovery.MDNSQueryForwarding, client)
 		go forwarder.Listen(*portFlag)
 	}
 	select {}

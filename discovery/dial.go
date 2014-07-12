@@ -17,7 +17,7 @@ var ssdpMulticastAddr = &net.UDPAddr{
 	Port: 1900,
 }
 
-func ListenForDIAL(clientChannel chan<- *forwarder.Request) {
+func ListenForDIAL(client *forwarder.Client) {
 	conn, err := net.ListenMulticastUDP("udp", nil, ssdpMulticastAddr)
 	if err != nil {
 		log.Fatalf("net.ListenMulticastUDP failed: %v", err)
@@ -44,13 +44,7 @@ func ListenForDIAL(clientChannel chan<- *forwarder.Request) {
 			continue
 		}
 
-		clientChannel <- &forwarder.Request{
-			&forwarder.Args{
-				ssdpMulticastAddr,
-				buf[:n],
-			},
-			newReplyHandler(addr),
-		}
+		client.SendAndReply(ssdpMulticastAddr, buf[:n], newReplyHandler(addr))
 	}
 }
 
