@@ -42,7 +42,7 @@ func NewClient(endpointAddr string) *Client {
 func handleRequests(endpointAddr string, channel <-chan func(*rpc.Client)) {
 	for rpcCall := range channel {
 		go func() {
-			client, err := rpc.DialHTTP("tcp", endpointAddr+":8714")
+			client, err := rpc.DialHTTP("tcp", endpointAddr)
 			if err != nil {
 				log.Printf("rpc.Dial failed: %v", err)
 				return
