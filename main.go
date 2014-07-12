@@ -9,7 +9,7 @@ import (
 
 var endpointFlag = flag.String("endpoint", "", "")
 var portFlag = flag.Int("port", 0, "")
-var serviceFlag = flag.Bool("client", false, "")
+var serviceFlag = flag.Bool("service", false, "")
 
 func main() {
 	flag.Parse()
